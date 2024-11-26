@@ -3,6 +3,7 @@
 */
 import type CollectContainer from '../../core/CollectContainer';
 import RevealContainer from '../../core/RevealContainer';
+import { CardType } from '../../../src/core/constants';
 
 export interface IConfig {
   vaultID: string;
@@ -34,6 +35,7 @@ export interface CollectElementInput {
   labelStyles?: CollectLabelStylesVariant;
   errorTextStyles?: StylesBaseVariant;
   containerType?: string;
+  skyflowID?: string;
 }
 
 export interface CollectElementProps {
@@ -52,6 +54,7 @@ export interface CollectElementProps {
   labelStyles?: CollectLabelStylesVariant;
   errorTextStyles?: StylesBaseVariant;
   containerMethods?: Record<any, any>;
+  skyflowID?: string;
 }
 
 export enum ElementType {
@@ -71,6 +74,7 @@ export interface CollectElementState {
   isEmpty: boolean;
   isFocused: boolean;
   isValid: boolean;
+  selectedCardScheme?: string;
 }
 
 export enum ContentType {
@@ -153,6 +157,10 @@ export interface CollectInputStylesVariant
   complete?: Record<string, any>;
   invalid?: Record<string, any>;
   empty?: Record<string, any>;
+  cardIcon?: Record<string, any>;
+  dropdownIcon?: Record<string, any>;
+  dropdown?: Record<string, any>;
+  dropdownListItem?: Record<string, any>;
 }
 
 export interface CollectLabelStylesVariant
@@ -172,9 +180,19 @@ export const DEFAULT_COLLECT_ELEMENT_STYLES = {
 export interface IInsertRecord {
   table: string;
   fields: Record<string, any>;
+  skyflowID?: string;
 }
 export interface IInsertRecordInput {
   records: IInsertRecord[];
+}
+
+export interface IInsertResponse {
+  records: IInsertResponseReocrds[];
+}
+export interface IInsertResponseReocrds {
+  table: string;
+  fields?: Record<string, any>;
+  skyflowID?: string;
 }
 
 export interface IUpsertInput {
@@ -191,6 +209,10 @@ export interface ICollectOptions {
 export interface CollectElementOptions {
   format?: string;
   required?: boolean;
+  enableCardIcon?: boolean,
+  cardMetadata?: {
+    scheme: typeof CardType[]
+  }
 }
 
 export const REQUIRED_MARK_DEFAULT_STYLE = {
@@ -232,4 +254,22 @@ export interface IGetInput {
 
 export interface IGetOptions {
   tokens?: Boolean;
+}
+
+export const CARD_ICON_DEFAULT_STYLE = {
+  width: 50,
+  height: 50,
+};
+
+export const CARD_NUMBER_ELEMENT_DEFAULT_STYLE = {
+  gap: 4,
+  borderWidth: 0,
+  borderRadius: 4,
+  borderColor: '#eae8ee',
+  paddingHorizontal: 0,
+}
+
+export interface IListItem {
+  label: string;
+  value: string;
 }

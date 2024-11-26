@@ -125,6 +125,7 @@ In [Event Listeners](#event-listener-on-collect-elements), the actual value of e
 ---
 ## Securely collecting data client-side
 -  [**Using Skyflow Elements to collect data**](#using-skyflow-elements-to-collect-data)
+-  [**Using Skyflow Elements to update data**](#using-skyflow-elements-to-update-data)
 -  [**Event listener on collect elements**](#event-listener-on-skyflow-elements)
 
 ### Using Skyflow Elements to collect data
@@ -189,6 +190,22 @@ const elementInputStyles = StyleSheet.create({
   invalid: {
     color: '#f44336',
   },
+  cardIcon: {
+    width: 50,
+    height: 50,
+  },
+  dropdownIcon: {
+    paddingTop: 14,
+    left: 4,
+  },
+  dropdown: {
+    top: 200,
+    left: 50,
+  },
+  dropdownListItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+  },
 });
 
 // "Passing the styles object to element
@@ -206,6 +223,10 @@ The `inputStyles` field accepts a style object which consists of CSS properties 
 - `empty`: applied when the element has no input.
 - `focus`: applied when the element has focus.
 - `invalid`: applied when the element has invalid input.
+- `cardIcon`: to modify the card icon default styles.
+- `dropdownIcon`: to modify the dropdown icon default styles/position.
+- `dropdown`: to modify the dropdown list’s default styles/position.
+- `dropdownListItem`: to modify the dropdown list item’s default styles/position.
 
 The states that are available for `labelStyles` are `base`, `focus` and `requiredAsterisk`.
 - `requiredAsterisk`: styles applied for the Asterisk symbol in the label. 
@@ -261,6 +282,12 @@ const options = {
   required: boolean,
   // Optional, format for the element (only applicable currently for EXPIRATION_DATE, EXPIRATION_YEAR ElementType).
   format: string,
+  // Optional, to choose whether to display the detected card icon, Defaults to 'true'.
+  enableCardIcon: boolean,
+  //Optional, metadata to control card number element behavior (only applicable for   CARD_NUMBER ElementType).
+  cardMetadata: {
+    scheme: typeof CardType[]
+  }
 };
 
 ```
@@ -280,6 +307,22 @@ The values that are accepted for `EXPIRATION_DATE` are
 The values that are accepted for `EXPIRATION_YEAR` are
   - `YY` (default)
   - `YYYY`
+
+The `cardMetadata` is an object containing metadata keys that govern the behavior of the card number element. It includes an optional key called `scheme`, which accepts an array of card types supported by Skyflow. This key dictates which brands appear in the dropdown for selecting a card brand in the card number element. The `CardType` is an enum representing all card schemes supported by Skyflow.
+
+**Supported card types by CardType :**
+
+- `VISA`
+- `MASTERCARD`
+- `AMEX`
+- `DINERS_CLUB`
+- `DISCOVER`
+- `JCB`
+- `MAESTRO`
+- `UNIONPAY`
+- `HIPERCARD`
+- `CARTES_BANCAIRES`
+
 
 **Note**: If not specified or an invalid value is passed to the `format` then it takes default value.
 
@@ -517,6 +560,268 @@ export default App;
 }
 ```
 
+### Using Skyflow Elements to update data
+
+You can update the data in a vault with Skyflow Elements. Use the following steps to securely update data. 
+
+### Step 1: Create a container
+
+Create a container for the form elements using the `useCollectContainer` hook as shown below:
+
+```jsx
+ const container = useCollectContainer()
+```
+
+### Step 2: Create a collect Element
+
+```jsx
+import {CardNumberElement} from 'skyflow-react-native';
+
+<CardNumberElement
+  container='<CONTAINER>'
+  table='<TABLE_NAME>'
+  column='<COLUMN_NAME>'
+  skyflowID='<SKYFLOW_ID>'
+  ...props
+/>
+```
+
+The following `props` can be passed to Skyflow Collection Element:
+
+``` javascript
+{
+  conatiner: 'CollectContainer'  // Required, the collect container.
+  table: 'string',               // Required, the table this data belongs to.
+  column: 'string',              // Required, the column into which this data should be inserted.
+  label: 'string',               // Optional, label for the form element.
+  placeholder: 'string',         // Optional, placeholder for the form element.
+  validations: [],               // Optional, array of validation rules.
+  onChange: Function,            // Optional, function that is passed to trigger the onChange event.
+  onFocus: Function,             // Optional, function that is passed to trigger the onChange event.
+  onBlur: Function,              // Optional, function that is passed to trigger the onChange event.
+  onReady: Function,             // Optional, function that is passed to trigger the onChange event.
+  inputStyles: {},               // Optional, styles object applied to the textinput field.
+  labelStyles: {},               // Optional, styles object applied to label of textinput field.
+  errorTextStyle: {},            // Optional, styles object applied to errortext of textinput field.
+  skyflowID: 'string'            // The skyflow_id of the record to be updated.
+}
+```
+
+The `table` and `column` fields indicate which table and column the Element corresponds to.
+
+`skyflowID` indicates the record that you want to update.
+
+### Step 3: Update data from Elements
+
+To submit a form, call the collect(options?) method on the container object. The `options` parameter takes an object of optional parameters as shown below:
+
+- `tokens`: indicates whether tokens for the collected data should be returned or not. Defaults to 'true'.
+- `additionalFields`: Non-PCI elements data to be updated or inserted into the vault which should be in the `records` object format.
+- `upsert`: To support upsert operations while collecting the data from Skyflow elements, pass the table and column that have been marked as unique in the table.
+
+```javascript
+const options = {
+    tokens: true,  // Optional, indicates whether tokens for the collected data should be returned. Defaults to 'true'.
+    additionalFields: {
+        records: [
+            {
+                table: 'string',       // Table into which record should be inserted.
+                fields: {
+                    column1: 'value',  // Column names should match vault column names.
+                    skyflowID: "value",     // The skyflow_id of the record to be updated.
+                    // ...additional fields here.
+                }
+            }
+            // ...additional records here.
+        ]
+    }, // Optional
+    upsert: [   // Optional, upsert operations support in the vault.
+        {
+            table: 'string',    // Table name.
+            column: 'string',   // Unique column in the table.
+        }
+    ],
+}
+
+```
+
+**Note:** `skyflowID` is required if you want to update the data. If `skyflowID` isn't specified, the `collect(options?)` method creates a new record in the vault.
+
+### End to end example of updating data with Skyflow Elements
+
+```jsx
+import React from 'react';
+import {CardNumberElement, useCollectContainer} from 'skyflow-react-native';
+import {View, StyleSheet, Button} from 'react-native';
+
+const App = () => {
+  const collectContainer = useCollectContainer();
+
+  const nonPCIRecords = {
+   records: [
+     {
+       table: 'cards',
+       fields: {
+         gender: 'MALE',
+         skyflowID:  '431eaa6c-5c15-4513-aa15-29f50babe882',
+       },
+     },
+   ],
+  };
+
+  const handleCollect = () => {
+    collectContainer
+      .collect({
+        tokens: true,
+        additionalFields: nonPCIRecords
+      })
+      .then((response: any) => {
+        console.log('Collect Success: ', JSON.stringify(response));
+      })
+      .catch(err => {
+        console.error('Collect Failed: ', JSON.stringify(err));
+      });
+  };
+
+  return (
+    <>
+      <View style={viewStyles.box}>
+        <CardNumberElement
+          container={collectContainer}
+          table='cards'
+          column='card_number'
+          placeholder='XXXX XXXX XXXX XXXX'
+          label='Card Number'
+          options={{
+            required: true,
+          }}
+          skyflowID='431eaa6c-5c15-4513-aa15-29f50babe882'
+          ...props
+        />
+      </View>
+      <View style={viewStyles.box}>
+        <CardHolderNameElement
+          container={collectContainer}
+          table='cards'
+          column='first_name'
+          placeholder='Card Holder Name'
+          label='First name'
+          options={{
+            required: true,
+          }}
+          skyflowID='431eaa6c-5c15-4513-aa15-29f50babe882'
+          ...props
+        />
+      </View>
+      <View style={viewStyles.box}>
+        <Button title='Collect' onPress={handleCollect} />
+      </View>
+    </>
+  );
+};
+
+export default App;
+```
+
+**Sample response :**
+```javascript
+{
+ "records": [
+   {
+     "table": "cards",
+     "fields": {
+       "skyflow_id": "431eaa6c-5c15-4513-aa15-29f50babe882",
+       "card_number": "f3907186-e7e2-466f-91e5-48e12c2bcbc1",
+       "first_name": "131e70dc-6f76-4319-bdd3-96281e051051",
+       "gender": "12f670af-6c7d-4837-83fb-30365fbc0b1e"
+     }
+   }
+ ]
+}
+```
+
+### End to end example of collecting and updating data with Skyflow Elements
+
+```jsx
+import React from 'react';
+import {CardNumberElement, useCollectContainer} from 'skyflow-react-native';
+import {View, StyleSheet, Button} from 'react-native';
+
+const App = () => {
+  const collectContainer = useCollectContainer();
+
+  const handleCollect = () => {
+    collectContainer
+      .collect()
+      .then((response: any) => {
+        console.log('Collect Success: ', JSON.stringify(response));
+      })
+      .catch(err => {
+        console.error('Collect Failed: ', JSON.stringify(err));
+      });
+  };
+
+  return (
+    <>
+      <View style={viewStyles.box}>
+        <CardNumberElement
+          container={collectContainer}
+          table='cards'
+          column='card_number'
+          placeholder='XXXX XXXX XXXX XXXX'
+          label='Card Number'
+          options={{
+            required: true,
+          }}
+          ...props
+        />
+      </View>
+      <View style={viewStyles.box}>
+        <CardHolderNameElement
+          container={collectContainer}
+          table='cards'
+          column='first_name'
+          placeholder='Card Holder Name'
+          label='First name'
+          options={{
+            required: true,
+          }}
+          skyflowID='431eaa6c-5c15-4513-aa15-29f50babe882'
+          ...props
+        />
+      </View>
+      <View style={viewStyles.box}>
+        <Button title='Collect' onPress={handleCollect} />
+      </View>
+    </>
+  );
+};
+
+export default App;
+```
+
+**Sample response :**
+```javascript
+{
+  "records": [
+    {
+      "table": "cards",
+      "fields": {  //inserted fields
+        "skyflow_id": "899b9d98-8de0-40de-b8fb-fe8a22709b72",
+        "card_number": "c32de867-eb7d-4d67-a0a9-edef8f6fdbc1"
+      }
+    },
+    {
+      "table": "cards",
+      "fields": {  //updated fields
+        "skyflow_id": "431eaa6c-5c15-4513-aa15-29f50babe882",
+        "first_name": "131e70dc-6f76-4319-bdd3-96281e051051"
+      }
+    }
+  ]
+}
+```
+
 ## Validations:
 
 The Skyflow React Native SDK provides two types of validations on Collect Elements.
@@ -623,11 +928,14 @@ state : {
   isFocused: boolean
   isValid: boolean
   value: string
+  selectedCardScheme: CardType || ""  // only for CARD_NUMBER element type
 }
 ```
 
 **Note**:
-values of SkyflowElements will be returned in element state object only when `env` is  `DEV`,  else it is empty string i.e, '', but in case of CARD_NUMBER type element when the `env` is `PROD` for all the card types except AMEX, it will return first eight digits, for AMEX it will return first six digits and rest all digits in masked format.
+- Values of SkyflowElements will be returned in element state object only when `env` is  `DEV`,  else it is empty string i.e, '', but in case of CARD_NUMBER type element when the `env` is `PROD` for all the card types except AMEX, it will return first eight digits, for AMEX it will return first six digits and rest all digits in masked format.
+
+- `selectedCardScheme` is only populated for the `CARD_NUMBER` element states when a user chooses a card brand. By default, `selectedCardScheme` is an empty string.
 
 ### Example Usage of Event Listener on Collect Elements
 ```jsx

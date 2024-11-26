@@ -7,6 +7,7 @@ import { Button, StyleSheet, View } from 'react-native';
 import {
   CardHolderNameElement,
   CardNumberElement,
+  CvvElement,
   ExpirationDateElement,
   InputFieldElement,
   useCollectContainer,
@@ -16,26 +17,24 @@ import {
 const CollectElements = props => {
   const collectContainer = useCollectContainer();
 
-  const lengthRule = {
-    type: ValidationRuleType.LENGTH_MATCH_RULE,
-    params: {
-      min: 4,
-      max: 8,
-      error: 'Must be between 4 and 8 alphabets',
-    },
-  };
-
-  const ssnRegexRule = {
-    type: ValidationRuleType.REGEX_MATCH_RULE,
-    params: {
-      regex: /^(?!(000|666|9))\d{3}-(?!00)\d{2}-(?!0000)\d{4}$/,
-      error: 'Invalid SSN',
+  const options = {
+    tokens: true,
+    additionalFields: {
+      records: [
+        {
+          table: "table1",
+          fields: {
+            skyflowID: "",     //Add a valid skyflow-id for which you want to update the data
+            gender: "MALE",
+          },
+        }
+      ],
     },
   };
 
   const handleCollect = () => {
     collectContainer
-      .collect()
+      .collect(options)
       .then((response: any) => {
         console.log('Collect Success: ', JSON.stringify(response));
         const fieldsTokenData = response.records[0].fields;
@@ -71,6 +70,7 @@ const CollectElements = props => {
           labelStyles={elementLabelStyles}
           errorTextStyles={errorTextStyles}
           onChange={handleOnChange}
+          skyflowID=''   //Add a valid skyflow-id for which you want to update the data
         />
       </View>
       <View style={viewStyles.box}>
@@ -86,6 +86,7 @@ const CollectElements = props => {
           inputStyles={elementInputStyles}
           errorTextStyles={errorTextStyles}
           onFocus={handleOnFocus}
+          skyflowID=''   //Add a valid skyflow-id for which you want to update the data
         />
       </View>
       <View style={viewStyles.box}>
@@ -95,22 +96,21 @@ const CollectElements = props => {
           column='cardholder_name'
           placeholder='john'
           label='Name on Card'
-          validations={[lengthRule]}
           inputStyles={elementInputStyles}
           errorTextStyles={errorTextStyles}
           onBlur={handleOnBlur}
         />
       </View>
       <View style={viewStyles.box}>
-        <InputFieldElement
+        <CvvElement
           container={collectContainer}
           table='cards'
-          column='ssn'
-          placeholder='XXX-XX-XXXX'
-          label='SSN'
-          validations={[ssnRegexRule]}
+          column='card_cvv'
+          placeholder='cvv'
+          label='Card CVV'
           inputStyles={elementInputStyles}
           errorTextStyles={errorTextStyles}
+          skyflowID=''   //Add a valid skyflow-id for which you want to update the data
         />
       </View>
       <View style={viewStyles.box}>

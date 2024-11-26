@@ -101,6 +101,7 @@ class CollectElement extends SkyflowElement {
       isEmpty: true,
       value: '',
       isValid: !options.required,
+      ...(this.#elementType === ElementType.CARD_NUMBER ? { selectedCardScheme: '' } : {}),
     };
     printLog(
       parameterizedString(
@@ -111,6 +112,10 @@ class CollectElement extends SkyflowElement {
       MessageType.LOG,
       this.#context.logLevel
     );
+  }
+
+  onDropdownSelect(cardType: string) {
+    this.#state.selectedCardScheme = cardType
   }
 
   setMethods(setErrorText, stylesSetters?: any) {
@@ -144,14 +149,17 @@ class CollectElement extends SkyflowElement {
   }
 
   getClientState() {
+    const { elementType, selectedCardScheme, ...restState } = this.#state;
     return {
-      ...this.#state,
+      ...restState,
+      elementType: elementType,
       value: getReturnValue(
         this.#state.value,
         EnvOptions[this.#context.env]?.doesReturnValue,
         this.#elementType,
         this.#cardType
       ),
+      ...(elementType===ElementType.CARD_NUMBER ? {selectedCardScheme} : {})
     };
   }
 
@@ -167,7 +175,8 @@ class CollectElement extends SkyflowElement {
     }
   }
 
-  onChangeElement(value: string) {
+  onChangeElement(value: string, onDropdownSelect?: boolean) {
+    if(!onDropdownSelect) {
     switch (this.#elementType) {
       case ElementType.EXPIRATION_MONTH:
         this.updateElement(formatExpirationMonthValue(value));
@@ -181,6 +190,7 @@ class CollectElement extends SkyflowElement {
         break;
       default:
         this.updateElement(value);
+    } 
     }
     if (this.#elementInput.onChange) {
       this.#elementInput.onChange(this.getClientState());
@@ -315,6 +325,13 @@ class CollectElement extends SkyflowElement {
         SKYFLOW_ERROR_CODE.INVALID_COLUMN_IN_COLLECT,
         [],
         true
+      );
+    }
+    if ( this.#elementInput.skyflowID !== undefined && !this.#elementInput.skyflowID) {
+      throw new SkyflowError(
+        SKYFLOW_ERROR_CODE.EMPTY_SKYFLOW_ID_COLLECT,
+        [],
+        true,
       );
     }
 
